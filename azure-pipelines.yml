@@ -17,45 +17,70 @@ variables:
 
 stages:
 
-  # ─── STAGE 1: Create Discovery ───────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────
+  # STAGE 1: Create Discovery
+  # Crawls the target URL and maps all entry points (API endpoints)
+  # Outputs DISCOVERY_ID for use in Stage 2
+  # ─────────────────────────────────────────────────────────────────
   - stage: CreateDiscovery
-    displayName: 'Stage 1 - Create Discovery'
+    displayName: '1 - Create Discovery'
     jobs:
       - job: RunCreateDiscovery
         steps:
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '3.x'
+
+          - script: pip install requests
+            displayName: 'Install dependencies'
+
           - script: |
-              pip install requests
               python3 create_discovery.py \
                 --apiKey $(BRIGHTSEC_API_KEY) \
                 --projectId $(PROJECT_ID) \
                 --targetUrl $(TARGET_URL) \
                 --nameDiscovery $(NAME_DISCOVERY)
             displayName: 'Create Discovery'
+            name: CreateDiscoveryStep   # <-- named so we can reference its output variable
 
-  # ─── STAGE 2: Wait for Discovery to Complete ─────────────────────
+  # ─────────────────────────────────────────────────────────────────
+  # STAGE 2: Wait for Discovery to Complete
+  # Polls Bright API every 30s until discovery status = "done"
+  # Uses the DISCOVERY_ID output from Stage 1
+  # ─────────────────────────────────────────────────────────────────
   - stage: WaitForDiscovery
-    displayName: 'Stage 2 - Wait for Discovery'
+    displayName: '2 - Wait for Discovery'
     dependsOn: CreateDiscovery
+    variables:
+      # Pick up the discovery ID that Stage 1 printed via ##vso[task.setvariable]
+      DISCOVERY_ID: $[ stageDependencies.CreateDiscovery.RunCreateDiscovery.outputs['CreateDiscoveryStep.DISCOVERY_ID'] ]
     jobs:
       - job: WaitForDiscovery
-        timeoutInMinutes: 60        # stop waiting after 60 min
+        timeoutInMinutes: 120
         steps:
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '3.x'
+
+          - script: pip install requests
+            displayName: 'Install dependencies'
+
           - script: |
-              pip install requests
+              echo "Waiting for discovery ID: $(DISCOVERY_ID)"
               python3 wait_for_discovery.py \
                 --api_key $(BRIGHTSEC_API_KEY) \
-                --discovery_id $(DISCOVERY_ID)
-            displayName: 'Wait for Discovery to Finish'
+                --discovery_id $(DISCOVERY_ID) \
+                --timeout 7000 \
+                --interval 30
+            displayName: 'Wait for Discovery to Complete'
 
-  # ─── STAGE 3: Run Scan ───────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────
+  # STAGE 3: Run Security Scan
+  # Fetches entry points found by discovery and runs full DAST scan
+  # Only runs after discovery completes successfully
+  # ─────────────────────────────────────────────────────────────────
   - stage: RunScan
-    displayName: 'Stage 3 - Run Scan'
+    displayName: '3 - Run Security Scan'
     dependsOn: WaitForDiscovery
     jobs:
       - job: RunScan
@@ -63,8 +88,11 @@ stages:
           - task: UsePythonVersion@0
             inputs:
               versionSpec: '3.x'
+
+          - script: pip install requests
+            displayName: 'Install dependencies'
+
           - script: |
-              pip install requests
               python3 run_ep_scan.py \
                 --api_key $(BRIGHTSEC_API_KEY) \
                 --scan_name $(NAME_SCAN) \

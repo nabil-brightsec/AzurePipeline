@@ -1,11 +1,23 @@
 import requests
 import json
 import argparse
-import os
+import sys
+import logging
 
-def run_discovery(api_key, project_id, target_url,name_discovery):
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def get_args():
+    parser = argparse.ArgumentParser(description='Run a Discovery in Bright Security')
+    parser.add_argument('--apiKey', required=True, help='Bright Security API Key')
+    parser.add_argument('--projectId', required=True, help='Project ID for which the discovery will be run')
+    parser.add_argument('--targetUrl', required=True, help='Target URL for the discovery')
+    parser.add_argument('--nameDiscovery', required=True, help='Name for the discovery')
+    return parser.parse_args()
+
+def run_discovery(api_key, project_id, target_url, name_discovery):
     url = f"https://app.brightsec.com/api/v2/projects/{project_id}/discoveries"
-    
+
     headers = {
         'Authorization': f"Api-Key {api_key}",
         'Content-Type': 'application/json'
@@ -30,8 +42,6 @@ def run_discovery(api_key, project_id, target_url,name_discovery):
         "maxInteractionsChainLength": 3,
         "slowEpTimeout": None,
         "subdomainsCrawl": False,
-#       "authObjectId": ["7aj2039dn2bcsklla"],
-#       "repeaters": ["nqV2nLFHVY97a1RPgeMwBG"],
         "crawlerUrls": [target_url],
         "discoveryTypes": ["crawler"],
         "poolSize": 10
@@ -39,24 +49,34 @@ def run_discovery(api_key, project_id, target_url,name_discovery):
 
     try:
         response = requests.post(url, headers=headers, data=json.dumps(payload))
-        
+
         if response.status_code == 201:
-            print(f"Discovery for project {project_id} started successfully!")
+            response_data = response.json()
+
+            # ── The discovery ID comes back in the response ──
+            discovery_id = response_data.get("id")
+
+            if not discovery_id:
+                logger.error("Discovery started but no ID returned in response.")
+                logger.error(f"Full response: {response_data}")
+                sys.exit(1)
+
+            logger.info(f"Discovery started successfully! ID: {discovery_id}")
+
+            # ── Pass the ID to the next Azure Pipeline stage ──
+            # This is the Azure DevOps way to set a variable that other stages can read
+            print(f"##vso[task.setvariable variable=DISCOVERY_ID;isOutput=true]{discovery_id}")
+            print(f"Discovery ID: {discovery_id}")
+
         else:
-            print(f"Failed to start discovery. Status code: {response.status_code}, Response: {response.text}")
+            logger.error(f"Failed to start discovery. Status: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            sys.exit(1)
+
     except Exception as e:
-        print(f"Error during the discovery: {str(e)}")
+        logger.error(f"Error during discovery: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run a Discovery in BrightSec')
-    
-    # Command line arguments to pass the API key, project ID, and target URL
-    parser.add_argument('--apiKey', required=True, help='BrightSec API Key')
-    parser.add_argument('--projectId', required=True, help='Project ID for which the discovery will be run')
-    parser.add_argument('--targetUrl', required=True, help='Target URL for the discovery')
-    parser.add_argument('--nameDiscovery', required=True, help='Name for the discovery')
-
-    args = parser.parse_args()
-    
-    # Run the discovery with the provided inputs
+    args = get_args()
     run_discovery(args.apiKey, args.projectId, args.targetUrl, args.nameDiscovery)

@@ -3,7 +3,7 @@ pool:
 
 variables:
   - name: BRIGHTSEC_API_KEY
-    value: 0spnuda.nexa.c1goqd3vxnqxzangckjvwsjnyrizhglj
+    value: $(BRIGHTSEC_API_KEY)
   - name: PROJECT_ID
     value: 4JtHcWih7ouZy7FBVUySo2
   - name: TARGET_URL

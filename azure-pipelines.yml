@@ -1,0 +1,60 @@
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- name: BRIGHTSEC_API_KEY
+  value: 0spnuda.nexa.c1goqd3vxnqxzangckjvwsjnyrizhglj
+- name: GROUP_IDS
+  value: auTxkMgnzoeRW9MRdCF5ZQ
+- name: PROJECT_NAME_FILE
+  value: project_name.txt
+- name: PROJECT_ID
+  value: 4JtHcWih7ouZy7FBVUySo2
+- name: TARGET_URL
+  value: https://brokencrystals.com/
+- name: NAME_DISCOVERY
+  value: DiscoveryTest123
+- name: NAME_SCAN
+  value: ScanTest123
+- name: PROJECT_NAME
+  value: test_BC 
+
+stages:
+- stage: CreateDiscovery
+  displayName: 'Create Discovery'
+  jobs:
+    - job: RunScriptCreateDiscovery
+      steps:
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: '3.x'
+        - script: |
+            pip install requests
+            python3 create_discovery.py --apiKey $(BRIGHTSEC_API_KEY) --projectId $(PROJECT_ID) --targetUrl $(TARGET_URL) --nameDiscovery $(NAME_DISCOVERY)
+          displayName: "Create Discovery"
+# - stage: WaitForDiscovery
+#   displayName: 'Wait for Disocovery'
+#   jobs:
+#     - job: WaitForDiscovery
+#       steps:
+#         - task: UsePythonVersion@0
+#           inputs:
+#             versionSpec: '3.x'
+#         - script: |
+#             pip install requests
+#             pip install --upgrade pip
+#             python3 wait_for_dicovery.py --api_key $(BRIGHTSEC_API_KEY) --dicovery_id $(DISCOVERY_ID)
+#           displayName: "Run Scan"
+- stage: RunScan
+  displayName: 'Run Scan'
+  jobs:
+    - job: RunScriptRunScan
+      steps:
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: '3.x'
+        - script: |
+            pip install requests
+            pip install --upgrade pip
+            python3 run_ep_scan.py --api_key $(BRIGHTSEC_API_KEY) --scan_name $(NAME_SCAN) --project_name $(PROJECT_NAME) --project_id $(PROJECT_ID)
+          displayName: "Run Scan"

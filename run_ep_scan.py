@@ -21,6 +21,21 @@ project_name = args.project_name
 project_id = args.project_id
 discovery_id = args.discovery_id
 
+def get_project_uuid(project_id):
+    url = f"https://app.brightsec.com/api/v2/projects/{project_id}"
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"api-key {api_key}"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        logger.info(f"Project data: {data}")
+        return data
+    else:
+        logger.error(f"Failed to get project: {response.status_code} - {response.text}")
+        return None
+
 def fetch_entry_points(project_id, discovery_id):
     headers = {
         "accept": "application/json",
@@ -64,13 +79,14 @@ def fetch_entry_points(project_id, discovery_id):
     logger.info(f"Total entry points fetched: {len(entry_point_ids)}")
     return entry_point_ids
 
-def start_scan(entry_point_ids):
+def start_scan(entry_point_ids, project_uuid):
     if not entry_point_ids:
         logger.info("No entry points found. Skipping scan.")
         return
 
     scan_payload = {
         "name": scan_name,
+        "projectId": project_uuid,
         "poolSize": 10,
         "smart": True,
         "optimizedCrawler": True,
@@ -111,5 +127,11 @@ def start_scan(entry_point_ids):
         logger.error(f"Scan failed: {response.status_code} - {response.text}")
 
 entry_point_ids = fetch_entry_points(project_id, discovery_id)
-start_scan(entry_point_ids)
+project_data = get_project_uuid(project_id)
+if project_data:
+    project_uuid = project_data.get('id', project_id)
+    logger.info(f"Using project UUID: {project_uuid}")
+    start_scan(entry_point_ids, project_uuid)
+else:
+    logger.error("Could not retrieve project UUID. Aborting scan.")
 print("Done.")

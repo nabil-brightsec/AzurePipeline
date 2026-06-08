@@ -33,7 +33,7 @@ def fetch_entry_points(project_id, discovery_id):
     next_created_at = None
 
     while True:
-        url = f"{base_url}?limit=500"
+        url = f"{base_url}?limit=10"
         if next_id and next_created_at:
             url += f"&nextId={next_id}&nextCreatedAt={next_created_at}"
 
@@ -43,7 +43,6 @@ def fetch_entry_points(project_id, discovery_id):
 
         if response.status_code != 200:
             logger.error(f"Failed to fetch entry points: {response.status_code}")
-            logger.error(f"URL called: {url}")
             logger.error(f"Response: {response.text}")
             break
 
@@ -57,7 +56,7 @@ def fetch_entry_points(project_id, discovery_id):
         entry_point_ids.extend(new_entry_points)
         logger.info(f"Page {page_number}: got {len(items)} items, {len(new_entry_points)} usable")
 
-        if len(items) < 500:
+        if len(items) < 10:
             break
 
         next_id = items[-1]['id']

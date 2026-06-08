@@ -1,3 +1,5 @@
+#trigger: none
+
 pool:
   name: Default
 
@@ -64,6 +66,6 @@ stages:
               python3 run_ep_scan.py \
                 --api_key $(BRIGHTSEC_API_KEY) \
                 --scan_name $(NAME_SCAN) \
-                --project_name $(PROJECT_NAME) \
+                --project_name "$(PROJECT_NAME)" \
                 --project_id $(PROJECT_ID)
             displayName: 'Run Security Scan'

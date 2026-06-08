@@ -30,7 +30,7 @@ def get_project_uuid(project_id):
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        logger.info(f"Project data: {data}")
+        logger.info(f"Project ID confirmed: {data.get('id')}")
         return data
     else:
         logger.error(f"Failed to get project: {response.status_code} - {response.text}")
@@ -41,18 +41,19 @@ def fetch_entry_points(project_id, discovery_id):
         "accept": "application/json",
         "Authorization": f"api-key {api_key}",
     }
-    base_url = f'https://app.brightsec.com/api/v2/projects/{project_id}/discoveries/{discovery_id}/entry-points'
+    base_url = f'https://app.brightsec.com/api/v2/projects/{project_id}/entry-points'
     entry_point_ids = []
     page_number = 1
     next_id = None
     next_created_at = None
 
     while True:
-        url = f"{base_url}?limit=10"
+        url = f"{base_url}?limit=10&scanId={discovery_id}"
         if next_id and next_created_at:
             url += f"&nextId={next_id}&nextCreatedAt={next_created_at}"
 
-        logger.info(f"Fetching page {page_number} of entry points for discovery {discovery_id}")
+        logger.info(f"Fetching page {page_number} of entry points")
+        logger.info(f"URL: {url}")
         response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
@@ -63,6 +64,7 @@ def fetch_entry_points(project_id, discovery_id):
         items = data.get('items', [])
 
         if not items:
+            logger.info("No more items found.")
             break
 
         new_entry_points = [item['id'] for item in items if item.get('connectivity') != 'skipped']

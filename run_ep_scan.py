@@ -21,22 +21,7 @@ project_name = args.project_name
 project_id = args.project_id
 discovery_id = args.discovery_id
 
-def get_project_uuid(project_id):
-    url = f"https://app.brightsec.com/api/v1/projects/{project_id}"
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"api-key {api_key}"
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        logger.info(f"Project ID confirmed: {data.get('id')}")
-        return data
-    else:
-        logger.error(f"Failed to get project: {response.status_code} - {response.text}")
-        return None
-
-def fetch_entry_points(project_id, discovery_id):
+def fetch_entry_points(project_id):
     headers = {
         "accept": "application/json",
         "Authorization": f"api-key {api_key}",
@@ -48,12 +33,12 @@ def fetch_entry_points(project_id, discovery_id):
     next_created_at = None
 
     while True:
-        url = f"{base_url}?limit=10&scanId={discovery_id}"
+        # Filter by status: new, changed, vulnerable — same as GitHub Actions
+        url = f"{base_url}?limit=10&status=new&status=changed&status=vulnerable"
         if next_id and next_created_at:
             url += f"&nextId={next_id}&nextCreatedAt={next_created_at}"
 
         logger.info(f"Fetching page {page_number} of entry points")
-        logger.info(f"URL: {url}")
         response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
@@ -64,12 +49,12 @@ def fetch_entry_points(project_id, discovery_id):
         items = data.get('items', [])
 
         if not items:
-            logger.info("No more items found.")
+            logger.info("No more items.")
             break
 
-        new_entry_points = [item['id'] for item in items if item.get('connectivity') != 'skipped']
+        new_entry_points = [item['id'] for item in items]
         entry_point_ids.extend(new_entry_points)
-        logger.info(f"Page {page_number}: got {len(items)} items, {len(new_entry_points)} usable")
+        logger.info(f"Page {page_number}: got {len(items)} items")
 
         if len(items) < 10:
             break
@@ -81,14 +66,14 @@ def fetch_entry_points(project_id, discovery_id):
     logger.info(f"Total entry points fetched: {len(entry_point_ids)}")
     return entry_point_ids
 
-def start_scan(entry_point_ids, project_uuid):
+def start_scan(entry_point_ids):
     if not entry_point_ids:
         logger.info("No entry points found. Skipping scan.")
         return
 
     scan_payload = {
         "name": scan_name,
-        "projectId": project_uuid,
+        "projectId": project_id,
         "poolSize": 10,
         "smart": True,
         "optimizedCrawler": True,
@@ -128,12 +113,6 @@ def start_scan(entry_point_ids, project_uuid):
     else:
         logger.error(f"Scan failed: {response.status_code} - {response.text}")
 
-entry_point_ids = fetch_entry_points(project_id, discovery_id)
-project_data = get_project_uuid(project_id)
-if project_data:
-    project_uuid = project_data.get('id', project_id)
-    logger.info(f"Using project UUID: {project_uuid}")
-    start_scan(entry_point_ids, project_uuid)
-else:
-    logger.error("Could not retrieve project UUID. Aborting scan.")
+entry_point_ids = fetch_entry_points(project_id)
+start_scan(entry_point_ids)
 print("Done.")

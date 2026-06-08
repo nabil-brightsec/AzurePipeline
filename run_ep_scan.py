@@ -71,7 +71,6 @@ def start_scan(entry_point_ids):
 
     scan_payload = {
         "name": scan_name,
-        "projectId": project_id,
         "poolSize": 10,
         "smart": True,
         "optimizedCrawler": True,

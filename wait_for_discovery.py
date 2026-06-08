@@ -19,14 +19,12 @@ def get_args():
 def get_discovery_status(api_key, project_id, discovery_id):
     url = f"https://app.brightsec.com/api/v2/projects/{project_id}/discoveries/{discovery_id}"
     headers = {
-        "accept": "application/json",
+        "Accept": "application/json",
         "Authorization": f"Api-Key {api_key}"
     }
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-        data = response.json()
-        logger.info(f"Full response: {data}")
-        return data
+        return response.json()
     else:
         logger.error(f"Failed to get discovery status: {response.status_code} - {response.text}")
         return None
@@ -43,12 +41,12 @@ def wait_for_discovery(api_key, project_id, discovery_id, timeout, interval):
             logger.warning("Could not retrieve status, retrying...")
         else:
             status = data.get("status", "unknown")
-            entry_points = data.get("discoveredEntryPoints", data.get("entryPointsCount", 0))
-            logger.info(f"Status: {status} | Entry points found: {entry_points} | Elapsed: {elapsed}s")
+            entry_points = data.get("entrypoints", 0)
+            logger.info(f"Status: {status} | Entry points: {entry_points} | Elapsed: {elapsed}s")
 
             if status in terminal_states:
                 if status in ["complete", "done"]:
-                    logger.info(f"Discovery completed successfully! Total entry points: {entry_points}")
+                    logger.info(f"Discovery completed! Total entry points: {entry_points}")
                     return True
                 else:
                     logger.error(f"Discovery ended with status: {status}. Cannot proceed.")

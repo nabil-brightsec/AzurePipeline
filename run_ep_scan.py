@@ -38,10 +38,13 @@ def fetch_entry_points(project_id, discovery_id):
             url += f"&nextId={next_id}&nextCreatedAt={next_created_at}"
 
         logger.info(f"Fetching page {page_number} of entry points for discovery {discovery_id}")
+        logger.info(f"URL called: {url}")
         response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
-            logger.error(f"Failed to fetch entry points: {response.status_code} - {response.text}")
+            logger.error(f"Failed to fetch entry points: {response.status_code}")
+            logger.error(f"URL called: {url}")
+            logger.error(f"Response: {response.text}")
             break
 
         data = response.json()
@@ -54,7 +57,6 @@ def fetch_entry_points(project_id, discovery_id):
         entry_point_ids.extend(new_entry_points)
         logger.info(f"Page {page_number}: got {len(items)} items, {len(new_entry_points)} usable")
 
-        # Only paginate if we got a full page
         if len(items) < 500:
             break
 

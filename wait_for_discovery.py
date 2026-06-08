@@ -24,13 +24,15 @@ def get_discovery_status(api_key, project_id, discovery_id):
     }
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-        return response.json()
+        data = response.json()
+        logger.info(f"Full response: {data}")
+        return data
     else:
         logger.error(f"Failed to get discovery status: {response.status_code} - {response.text}")
         return None
 
 def wait_for_discovery(api_key, project_id, discovery_id, timeout, interval):
-    terminal_states = ["done", "failed", "stopped", "disrupted"]
+    terminal_states = ["complete", "done", "failed", "stopped", "disrupted"]
     elapsed = 0
     logger.info(f"Starting to poll discovery ID: {discovery_id}")
     logger.info(f"Polling every {interval}s, timeout after {timeout}s")
@@ -41,15 +43,15 @@ def wait_for_discovery(api_key, project_id, discovery_id, timeout, interval):
             logger.warning("Could not retrieve status, retrying...")
         else:
             status = data.get("status", "unknown")
-            entry_points = data.get("discoveredEntryPoints", 0)
+            entry_points = data.get("discoveredEntryPoints", data.get("entryPointsCount", 0))
             logger.info(f"Status: {status} | Entry points found: {entry_points} | Elapsed: {elapsed}s")
 
             if status in terminal_states:
-                if status == "done":
-                    logger.info(f"Discovery completed! Total entry points: {entry_points}")
+                if status in ["complete", "done"]:
+                    logger.info(f"Discovery completed successfully! Total entry points: {entry_points}")
                     return True
                 else:
-                    logger.error(f"Discovery ended with status: {status}")
+                    logger.error(f"Discovery ended with status: {status}. Cannot proceed.")
                     sys.exit(1)
 
         time.sleep(interval)

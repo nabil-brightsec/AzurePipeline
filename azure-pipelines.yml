@@ -1,5 +1,5 @@
 pool:
-  vmImage: 'Default'
+  name: Default
 
 variables:
   - name: BRIGHTSEC_API_KEY

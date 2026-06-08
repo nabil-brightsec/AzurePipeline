@@ -44,9 +44,10 @@ stages:
             displayName: 'Install dependencies'
           - script: |
               echo "Waiting for discovery ID: $(DISCOVERY_ID)"
-              python3 wait-for-discover.py \
+              python3 wait_for_discovery.py \
                 --api_key $(BRIGHTSEC_API_KEY) \
                 --discovery_id $(DISCOVERY_ID) \
+                --project_id $(PROJECT_ID) \
                 --timeout 7000 \
                 --interval 30
             displayName: 'Wait for Discovery to Complete'

@@ -5,7 +5,7 @@ variables:
   - name: BRIGHTSEC_API_KEY
     value: $(BRIGHTSEC_API_KEY)
   - name: PROJECT_ID
-    value: 4JtHcWih7ouZy7FBVUySo2
+    value: rsGAc7oFBC4bPZiJAtrTo4
   - name: TARGET_URL
     value: https://brokencrystals.com/
   - name: NAME_DISCOVERY
@@ -13,7 +13,7 @@ variables:
   - name: NAME_SCAN
     value: ScanTest123
   - name: PROJECT_NAME
-    value: test_BC
+    value: Azure CI/CD Demo
 
 stages:
 

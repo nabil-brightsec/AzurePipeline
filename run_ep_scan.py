@@ -22,7 +22,7 @@ project_id = args.project_id
 discovery_id = args.discovery_id
 
 def get_project_uuid(project_id):
-    url = f"https://app.brightsec.com/api/v2/projects/{project_id}"
+    url = f"https://app.brightsec.com/api/v1/projects/{project_id}"
     headers = {
         "accept": "application/json",
         "Authorization": f"api-key {api_key}"

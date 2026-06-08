@@ -38,12 +38,10 @@ def fetch_entry_points(project_id, discovery_id):
             url += f"&nextId={next_id}&nextCreatedAt={next_created_at}"
 
         logger.info(f"Fetching page {page_number} of entry points for discovery {discovery_id}")
-        logger.info(f"URL called: {url}")
         response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
-            logger.error(f"Failed to fetch entry points: {response.status_code}")
-            logger.error(f"Response: {response.text}")
+            logger.error(f"Failed to fetch entry points: {response.status_code} - {response.text}")
             break
 
         data = response.json()
@@ -73,25 +71,15 @@ def start_scan(entry_point_ids):
 
     scan_payload = {
         "name": scan_name,
+        "projectId": project_id,
         "poolSize": 10,
         "smart": True,
         "optimizedCrawler": True,
         "maxInteractionsChainLength": 3,
         "skipStaticParams": True,
-        "slowEpTimeout": None,
-        "extraHosts": None,
-        "fileId": None,
-        "targetTimeout": 5,
-        "exclusions": {
-            "requests": [
-                {"patterns": [r"(?<excluded_file_ext>(\/\/[^?#]+\.)((?<image>jpg|jpeg|png|gif|svg|eps|webp|tif|tiff|bmp|psd|ai|raw|cr|pcx|tga|ico)|(?<video>mp4|avi|3gp|flv|h264|m4v|mkv|mov|mpg|mpeg|vob|wmv)|(?<audio>wav|mp3|ogg|wma|mid|midi|aif)|(?<document>doc|docx|odt|pdf|rtf|ods|xls|xlsx|odp|ppt|pptx)|(?<font>ttf|otf|fnt|fon))(?:$|#|\?))"], "methods": []},
-                {"patterns": ["logout|signout"]}
-            ]
-        },
-        "projectId": project_id,
         "entryPointIds": entry_point_ids,
-        "schedule": {"type": "now"},
         "module": "dast",
+        "attackParamLocations": ["query", "fragment", "body"],
         "tests": [
             "amazon_s3_takeover", "brute_force_login", "xxe", "cve_test", "csrf",
             "common_files", "wordpress", "cookie_security", "xss", "css_injection",
@@ -106,7 +94,6 @@ def start_scan(entry_point_ids):
             "insecure_tls_configuration", "ldapi", "lfi", "nosql", "open_database",
             "osi", "rfi", "sqli", "server_side_js_injection", "ssrf", "ssti", "xpathi"
         ],
-        "attackParamLocations": ["query", "fragment", "body"],
         "info": {"source": "api"}
     }
 

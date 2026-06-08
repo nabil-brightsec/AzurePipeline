@@ -1,4 +1,4 @@
-#trigger: none
+trigger: none
 
 pool:
   name: Default
@@ -14,57 +14,20 @@ variables:
     value: ScanTest123
   - name: PROJECT_NAME
     value: Azure CI/CD Demo
+  - name: DISCOVERY_ID
+    value: qcSVG5QJaWKd8WkzESmDvR
 
 stages:
 
-  - stage: CreateDiscovery
-    displayName: '1 - Create Discovery'
-    jobs:
-      - job: RunCreateDiscovery
-        steps:
-          - script: pip3 install requests
-            displayName: 'Install dependencies'
-          - script: |
-              python3 create_discovery.py \
-                --apiKey $(BRIGHTSEC_API_KEY) \
-                --projectId $(PROJECT_ID) \
-                --targetUrl $(TARGET_URL) \
-                --nameDiscovery $(NAME_DISCOVERY)
-            displayName: 'Create Discovery'
-            name: CreateDiscoveryStep
-
-  - stage: WaitForDiscovery
-    displayName: '2 - Wait for Discovery'
-    dependsOn: CreateDiscovery
-    variables:
-      DISCOVERY_ID: $[ stageDependencies.CreateDiscovery.RunCreateDiscovery.outputs['CreateDiscoveryStep.DISCOVERY_ID'] ]
-    jobs:
-      - job: WaitForDiscovery
-        timeoutInMinutes: 120
-        steps:
-          - script: pip3 install requests
-            displayName: 'Install dependencies'
-          - script: |
-              echo "Waiting for discovery ID: $(DISCOVERY_ID)"
-              python3 wait_for_discovery.py \
-                --api_key $(BRIGHTSEC_API_KEY) \
-                --discovery_id $(DISCOVERY_ID) \
-                --project_id $(PROJECT_ID) \
-                --timeout 7000 \
-                --interval 30
-            displayName: 'Wait for Discovery to Complete'
-
   - stage: RunScan
     displayName: '3 - Run Security Scan'
-    dependsOn: WaitForDiscovery
-    variables:
-      DISCOVERY_ID: $[ stageDependencies.CreateDiscovery.RunCreateDiscovery.outputs['CreateDiscoveryStep.DISCOVERY_ID'] ]
     jobs:
       - job: RunScan
         steps:
           - script: pip3 install requests
             displayName: 'Install dependencies'
           - script: |
+              echo "Discovery ID is: $(DISCOVERY_ID)"
               python3 run_ep_scan.py \
                 --api_key $(BRIGHTSEC_API_KEY) \
                 --scan_name $(NAME_SCAN) \
